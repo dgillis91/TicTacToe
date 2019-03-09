@@ -6,6 +6,7 @@ Created on Tue Mar  5 23:00:28 2019
 """
 
 from copy import deepcopy
+from decutils import timer
 
 DRAW = 'D'
 NEUTRAL = 'N'
@@ -24,7 +25,8 @@ class GameState:
     
         self._actions = None
         
-        self._winner = WinTester(self._state).winner()
+        tester = BitWinTester(self._state)
+        self._winner = tester.winner()
         self._utility = self._utility_function(self._winner)
         
     @property
@@ -65,55 +67,50 @@ class GameState:
             self._state
         )))
     
-class WinTester:
+class BitWinTester:
+    _test_flag = 0b111111111
+    _wins = set([
+        0b111000000,
+        0b000111000,
+        0b000000111,
+        0b100100100,
+        0b010010010,
+        0b001001001,
+        0b100010001,
+        0b001010100        
+    ])
+    
     def __init__(self, state):
         self._state = state
+        self._o_encoding = self._encoded_state(O)
+        self._x_encoding = self._encoded_state(X)
     
     def winner(self):
-        for player in PLAYERS:
-            for i in range(3):
-                row_win = self._is_row_win(i, player)
-                col_win = self._is_column_win(i, player)
-                if row_win or col_win:
-                    return player
-            if self._is_diagonal_win(player):
-                return player
-            
-        # Works because we've exhausted wins
+        x = self._x_encoding & BitWinTester._test_flag
+        o = self._o_encoding & BitWinTester._test_flag
+        
+        if x in BitWinTester._wins:
+            return X
+        if o in BitWinTester._wins:
+            return O
         if self._is_draw():
             return DRAW
-        
         return NEUTRAL
-    
-    def _is_row_win(self, row, player):
-        row_start_index = 3 * row
-        row_stop_index = row_start_index + 3
-        for i in range(row_start_index, row_stop_index):
-            if self._state[i] != player:
-                return False
-        return True
-
-    def _is_column_win(self, column, player):
-        stop_index = column + 7
-        for i in range(column, stop_index, 3):
-            if self._state[i] != player:
-                return False
-        return True
-    
-    def _is_diagonal_win(self, player):
-        diag_one_win = True
-        diag_two_win = True
-        for i in range(0, 9, 4):
-            if self._state[i] != player:
-                diag_one_win = False
-        for i in range(2, 7, 2):
-            if self._state[i] != player:
-                diag_two_win = False
-        return diag_one_win or diag_two_win
-    
+        
     def _is_draw(self):
         for tile in self._state:
             if tile == BLANK_FLAG:
                 return False
         return True
+
+    def _encoded_state(self, player):
+        accum = 0
+        for i in range(9):
+            if self._state[i] == player:
+                accum += (2 ** i)
+        return accum
     
+state = [X, X, X, 0, O, 0, 0, 0, O]
+gs = GameState(O, state)
+print(gs.is_terminal())
+print(gs._winner)
