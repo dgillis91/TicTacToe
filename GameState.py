@@ -5,17 +5,19 @@ Created on Tue Mar  5 23:00:28 2019
 @author: dgill
 """
 
+from copy import deepcopy
+
 DRAW = 'D'
 NEUTRAL = 'N'
 O = 'O'
 X = 'X'
 
 PLAYERS = [O, X]
+BLANK_FLAG = 0
 
 class GameState:
     PlayerMin = 0
     PlayerMax = 1
-    __blank_flag = 0
     def __init__(self, player, state):
         self._state = state
         self._player = player
@@ -32,7 +34,16 @@ class GameState:
     # Don't have children as a property - no reason to evaluate if this is
     # a terminal state.
     def children(self):
-        pass
+        states = []
+        move_indices = [
+            i for i, x in enumerate(self._state)
+            if x == self._player
+        ]
+        for move_index in move_indices:
+            board = deepcopy(self._state)
+            board[move_index] = self._player
+            states.append(board)
+        return states
     
     def is_terminal(self):
         return self._winner != NEUTRAL
@@ -68,6 +79,7 @@ class WinTester:
             if self._is_diagonal_win(player):
                 return player
             
+        # Works because we've exhausted wins
         if self._is_draw():
             return DRAW
         
@@ -100,11 +112,8 @@ class WinTester:
         return diag_one_win or diag_two_win
     
     def _is_draw(self):
-        pass
-    
-state = [O, X, 0, X, O, 0, 0, 0, O]
-
-gs = GameState(O, state)
-print(gs)
-print(gs._winner)
+        for tile in self._state:
+            if tile == BLANK_FLAG:
+                return False
+        return True
     
