@@ -68,7 +68,6 @@ class GameState:
         )))
     
 class BitWinTester:
-    _test_flag = 0b111111111
     _wins = set([
         0b111000000,
         0b000111000,
@@ -86,12 +85,9 @@ class BitWinTester:
         self._x_encoding = self._encoded_state(X)
     
     def winner(self):
-        x = self._x_encoding & BitWinTester._test_flag
-        o = self._o_encoding & BitWinTester._test_flag
-        
-        if x in BitWinTester._wins:
+        if self._x_encoding in BitWinTester._wins:
             return X
-        if o in BitWinTester._wins:
+        if self._o_encoding in BitWinTester._wins:
             return O
         if self._is_draw():
             return DRAW
