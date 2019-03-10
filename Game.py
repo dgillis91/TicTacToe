@@ -7,43 +7,26 @@ Created on Sat Mar  9 12:37:35 2019
 
 from GameState import GameState
 from GameState import X, O
+from gameagent import GameAgent
 from observable import Observable
+from tkinter import Tk, Label, Button
 
-class GameAgent:
-    def __init__(self, game_state):
-        self._game_state = game_state
-        
-    def update_state(self, state):
-        self._game_state = state
+class MyFirstGUI:
+    def __init__(self, master):
+        self.master = master
+        master.title("A simple GUI")
 
-    def best_move(self):
-        return max(
-            map(
-                lambda move: (move, self._min_play(move)),
-                self._game_state.children                  
-            ),
-            key = lambda tpl: tpl[1]
-        )[0]
-            
-    def _min_play(self, game_state):
-        if game_state.is_terminal:
-            return game_state.utility
-        return min(
-            map(
-                lambda move: self._max_play(move),
-                game_state.children
-            )
-        )
-            
-    def _max_play(self, game_state):
-        if game_state.is_terminal:
-            return game_state.utility
-        return max(
-            map(
-                lambda move: self._min_play(move),
-                game_state.children
-            )
-        )
+        self.label = Label(master, text="This is our first GUI!")
+        self.label.pack()
+
+        self.greet_button = Button(master, text="Greet", command=self.greet)
+        self.greet_button.pack()
+
+        self.close_button = Button(master, text="Close", command=master.quit)
+        self.close_button.pack()
+
+    def greet(self):
+        print("Greetings!")
 
 class GameRunner(Observable):
     def __init__(self):
@@ -79,7 +62,9 @@ class GameRunner(Observable):
             
     
 if __name__ == '__main__':
-    runner = GameRunner()
-    runner.play()
-    
+    root = Tk()
+    my_gui = MyFirstGUI(root)
+    root.mainloop()
+#    runner = GameRunner()
+#    runner.play()
     
