@@ -17,13 +17,11 @@ PLAYERS = [O, X]
 BLANK_FLAG = 0
 
 class GameState:
-    PlayerMin = 0
-    PlayerMax = 1
     def __init__(self, player, state):
         self._state = state
         self._player = player
     
-        self._actions = None
+        self._children = self._generate_children()
         
         tester = BitWinTester(self._state)
         self._winner = tester.winner()
@@ -33,22 +31,51 @@ class GameState:
     def utility(self):
         return self._utility
     
-    # Don't have children as a property - no reason to evaluate if this is
-    # a terminal state.
+    @property
     def children(self):
-        states = []
-        move_indices = [
-            i for i, x in enumerate(self._state)
-            if x == self._player
-        ]
-        for move_index in move_indices:
-            board = deepcopy(self._state)
-            board[move_index] = self._player
-            states.append(board)
-        return states
-    
+        for child in self._children:
+            yield child
+
+    @property
     def is_terminal(self):
         return self._winner != NEUTRAL
+    
+    @property
+    def player(self):
+        return self._player
+    
+    @property
+    def winner(self):
+        return self._winner
+    
+    def move(self, index):
+        next_player = self._next_player()
+        new_state = self._new_state(self._state, index)
+        return GameState(next_player, new_state)
+    
+    def _generate_children(self):
+        states = []
+        next_player = self._next_player()
+        move_indices = [
+            i for i, x in enumerate(self._state)
+            if x == BLANK_FLAG
+        ]
+        self._moves = set(move_indices)
+        for move_index in move_indices:
+            board = self._new_state(self._state, move_index)
+            states.append(GameState(next_player, board))
+        return states
+    
+    def _next_player(self):
+        if self._player == O:
+            return X
+        else:
+            return O
+    
+    def _new_state(self, state, index):
+        board = deepcopy(state)
+        board[index] = self._player
+        return board
     
     def _utility_function(self, winner):
         utility = 0
@@ -68,7 +95,7 @@ class GameState:
         )))
     
 class BitWinTester:
-    _wins = set([
+    _wins = [
         0b111000000,
         0b000111000,
         0b000000111,
@@ -77,7 +104,9 @@ class BitWinTester:
         0b001001001,
         0b100010001,
         0b001010100        
-    ])
+    ]
+    
+    _win_check = set(_wins)
     
     def __init__(self, state):
         self._state = state
@@ -85,10 +114,14 @@ class BitWinTester:
         self._x_encoding = self._encoded_state(X)
     
     def winner(self):
-        if self._x_encoding in BitWinTester._wins:
-            return X
-        if self._o_encoding in BitWinTester._wins:
-            return O
+        for win in BitWinTester._wins:
+            x = win & self._x_encoding
+            if x in BitWinTester._win_check:
+                return X
+        for win in BitWinTester._wins:
+            o = win & self._o_encoding
+            if o in BitWinTester._win_check:
+                return O
         if self._is_draw():
             return DRAW
         return NEUTRAL
@@ -99,6 +132,8 @@ class BitWinTester:
                 return False
         return True
 
+    # Endianess doesn't matter - the game state forms a symmetric 
+    # permutation group. This can likely be done faster with a shift.
     def _encoded_state(self, player):
         accum = 0
         for i in range(9):
@@ -106,7 +141,10 @@ class BitWinTester:
                 accum += (2 ** i)
         return accum
     
-state = [X, X, X, 0, O, 0, 0, 0, O]
-gs = GameState(O, state)
-print(gs.is_terminal())
-print(gs._winner)
+if __name__ == '__main__':
+    state = [X, X, X, 0, O, 0, 0, 0, O]
+    gs = GameState(O, state)
+    print(gs.is_terminal())
+    print(gs._winner)
+    for c in gs.children:
+        print(c)
